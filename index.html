@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Cochera UC - Sede Cusco</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+      body { font-family: Arial, sans-serif; text-align: center; background-color: #e9ecef; margin: 0; padding: 15px; }
+      .contenedor { max-width: 450px; margin: 0 auto; background-color: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+      .cabecera { background-color: #008751; color: white; padding: 20px; border-bottom: 5px solid #333333; }
+      .cabecera h2 { margin: 0; font-size: 1.3em; }
+      #reader { width: 100%; border: 2px solid #ccc; border-radius: 8px; }
+      #resultado { margin-top: 15px; padding: 15px; font-weight: bold; border-radius: 5px; background: #f8f9fa; }
+      .exito { color: #155724; background: #d4edda !important; border: 1px solid #c3e6cb; }
+      .error { color: #721c24; background: #f8d7da !important; border: 1px solid #f5c6cb; }
+      .cargando { color: #004085; background: #cce5ff !important; }
+    </style>
+  </head>
+  <body>
+    <div class="contenedor">
+      <div class="cabecera">
+        <h2>Control de Cochera UC</h2>
+        <p style="margin:5px 0 0 0; font-size: 0.9em;">Sede Cusco</p>
+      </div>
+      <div style="padding: 20px;">
+        <div id="reader"></div>
+        <div id="resultado">Esperando credencial QR...</div>
+      </div>
+    </div>
+
+    <script>
+      // 👇 PEGA AQUÍ TU URL DE DESPLIEGUE (terminada en /exec)
+      const API_URL = "https://script.google.com/macros/s/TU_ID_DE_DESPLIEGUE/exec";
+
+      let isScanning = false;
+
+      function onScanSuccess(decodedText) {
+        if (isScanning) return;
+        isScanning = true;
+
+        let resDiv = document.getElementById('resultado');
+        resDiv.innerHTML = "⏳ Verificando credencial...";
+        resDiv.className = "cargando";
+
+        fetch(API_URL + "?dni=" + encodeURIComponent(decodedText))
+          .then(res => res.json())
+          .then(data => {
+            resDiv.innerHTML = data.mensaje;
+            resDiv.className = (data.mensaje.includes("❌") || data.mensaje.includes("⚠️")) ? "error" : "exito";
+            setTimeout(() => {
+              isScanning = false;
+              resDiv.innerHTML = "Esperando credencial QR...";
+              resDiv.className = "";
+            }, 3000);
+          })
+          .catch(err => {
+            resDiv.innerHTML = "❌ Error de conexión.";
+            resDiv.className = "error";
+            setTimeout(() => { isScanning = false; }, 3000);
+          });
+      }
+
+      let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+      html5QrcodeScanner.render(onScanSuccess);
+    </script>
+  </body>
+</html>
